@@ -12,11 +12,11 @@ gRPC-Web 调试面板（Chrome DevTools 扩展），用于在浏览器中查看 
 
 ## 打包
 
-运行仓库根目录的 `pack.ps1`：
+运行仓库根目录的 `pack.cmd`（内部调用 `pack.ps1`，已绕过 PowerShell 执行策略限制）：
 
 ```powershell
-.\pack.ps1            # 版本号自动读取 manifest.json 的 version
-.\pack.ps1 1.0.1      # 或手动指定版本号
+.\pack.cmd            # 版本号自动读取 manifest.json 的 version
+.\pack.cmd 1.0.1      # 或手动指定版本号（会自动同步 manifest.json 的 version）
 ```
 
 产物为 `grpc-T-v<版本>.zip`，脚本会自检路径格式（正斜杠、`manifest.json` 在包根目录）。

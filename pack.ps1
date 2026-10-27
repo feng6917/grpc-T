@@ -17,9 +17,18 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 
 $root = $PSScriptRoot
+$manifestPath = Join-Path $root 'manifest.json'
+# 注意: 必须指定 UTF8 编码, 否则 PS 5.1 会把无 BOM 的 UTF-8 按 ANSI 读取, 中文会乱码
+$manifest = Get-Content $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
 if (-not $Version) {
-    $manifest = Get-Content (Join-Path $root 'manifest.json') -Raw | ConvertFrom-Json
     $Version = $manifest.version
+}
+elseif ($manifest.version -ne $Version) {
+    # 指定了版本号时同步 manifest.json, 保证包名与扩展版本一致
+    $raw = Get-Content $manifestPath -Raw -Encoding UTF8
+    $raw = $raw -replace '"version"\s*:\s*"[^"]*"', ('"version": "' + $Version + '"')
+    [System.IO.File]::WriteAllText($manifestPath, $raw, (New-Object System.Text.UTF8Encoding $false))
+    Write-Host "manifest.json 版本已同步为 $Version"
 }
 
 $zipPath = Join-Path $root "grpc-T-v$Version.zip"
@@ -33,7 +42,8 @@ try {
         Where-Object {
             $_.FullName -notmatch '\\\.git($|\\)' -and
             $_.Name -notlike 'grpc-T-v*.zip' -and
-            $_.Name -ne 'pack.ps1'
+            $_.Name -ne 'pack.ps1' -and
+            $_.Name -ne 'pack.cmd'
         } |
         ForEach-Object {
             $rel = $_.FullName.Substring($root.Length + 1).Replace('\', '/')
