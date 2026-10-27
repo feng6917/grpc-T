@@ -1,0 +1,64 @@
+﻿# grpc-T 扩展打包脚本
+# 用法: .\pack.ps1 [版本号]  (默认读取 manifest.json 中的 version)
+# 产物: grpc-T-v<版本>.zip (可直接拖入 Edge/Chrome 扩展程序页面安装)
+#
+# 注意: 不要用 PowerShell 的 Compress-Archive 打包 —— 它生成的 zip 内部
+# 路径是反斜杠(static\css\...), 不符合 zip 规范, Edge 解包后资源加载失败;
+# 也不要用 tar.exe -a —— 它会带 "./" 前缀条目, Edge 报
+# "Could not unzip extension for install"。
+# 正确做法: 用 .NET ZipArchive 逐文件写入, 正斜杠路径, 仅文件条目,
+# manifest.json 位于 zip 根目录。
+
+param(
+    [string]$Version
+)
+
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+
+$root = $PSScriptRoot
+if (-not $Version) {
+    $manifest = Get-Content (Join-Path $root 'manifest.json') -Raw | ConvertFrom-Json
+    $Version = $manifest.version
+}
+
+$zipPath = Join-Path $root "grpc-T-v$Version.zip"
+Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
+
+$fs = [System.IO.File]::Create($zipPath)
+$zip = New-Object System.IO.Compression.ZipArchive($fs, [System.IO.Compression.ZipArchiveMode]::Create)
+try {
+    # 排除 .git、已生成的 zip 包和本脚本
+    Get-ChildItem $root -Recurse -File |
+        Where-Object {
+            $_.FullName -notmatch '\\\.git($|\\)' -and
+            $_.Name -ne (Split-Path $zipPath -Leaf) -and
+            $_.Name -ne 'pack.ps1'
+        } |
+        ForEach-Object {
+            $rel = $_.FullName.Substring($root.Length + 1).Replace('\', '/')
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $rel) | Out-Null
+        }
+}
+finally {
+    $zip.Dispose()
+    $fs.Dispose()
+}
+
+# 自检: 确认 manifest.json 在 zip 根目录且条目路径均为正斜杠
+$check = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
+try {
+    $bad = @($check.Entries | Where-Object { $_.FullName -like '*\*' -or $_.FullName -like './*' })
+    $hasManifest = $check.Entries | Where-Object { $_.FullName -eq 'manifest.json' }
+    $count = $check.Entries.Count
+}
+finally {
+    $check.Dispose()
+}
+
+if ($bad.Count -gt 0 -or -not $hasManifest) {
+    throw "打包自检失败: 反斜杠或 ./* 条目 $($bad.Count) 个, manifest.json 在根目录: $([bool]$hasManifest)"
+}
+
+Get-Item $zipPath | Select-Object Name, @{n='Size(KB)';e={[math]::Round($_.Length/1KB,1)}}
+Write-Host "OK: $count 个文件, 路径格式校验通过, 可拖入扩展程序页面安装。"

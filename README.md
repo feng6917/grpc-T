@@ -8,6 +8,21 @@ gRPC-Web 调试面板（Chrome DevTools 扩展），用于在浏览器中查看 
 2. 「加载已解压的扩展程序」选择本目录
 3. 打开目标页面的 DevTools，选择 **grpc-T** 面板
 
+> 也可直接把 release 包 `grpc-T-v<版本>.zip` 拖到 Edge 的扩展程序页面安装（Chrome 需解压后拖入文件夹）。
+
+## 打包
+
+运行仓库根目录的 `pack.ps1`：
+
+```powershell
+.\pack.ps1            # 版本号自动读取 manifest.json 的 version
+.\pack.ps1 1.0.1      # 或手动指定版本号
+```
+
+产物为 `grpc-T-v<版本>.zip`，脚本会自检路径格式（正斜杠、`manifest.json` 在包根目录）。
+
+**注意**：不要改用 `Compress-Archive`（zip 内部路径为反斜杠，Edge 解包后资源加载失败）或 `tar.exe -a`（带 `./` 前缀条目，Edge 报 "Could not unzip extension for install"）。
+
 ## 功能
 
 - **请求列表**：名称 / 时间 / 耗时 / 体积 分列展示，慢请求（≥1s）橙色高亮、失败请求红色
