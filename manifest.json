@@ -1,0 +1,45 @@
+{
+  "name": "grpc-T",
+  "version": "1.0.0",
+  "description": "gRPC-Web 调试面板",
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "all_frames": true,
+      "js": [
+        "content-script.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "devtools_page": "devtools.html",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "web_accessible_resources": [
+    {
+      "matches": [
+        "https://*/*",
+        "http://*/*"
+      ],
+      "resources": [
+        "connect-web-interceptor.js",
+        "inject.js"
+      ]
+    }
+  ]
+}
