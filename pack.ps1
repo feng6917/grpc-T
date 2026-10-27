@@ -28,11 +28,11 @@ Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
 $fs = [System.IO.File]::Create($zipPath)
 $zip = New-Object System.IO.Compression.ZipArchive($fs, [System.IO.Compression.ZipArchiveMode]::Create)
 try {
-    # 排除 .git、已生成的 zip 包和本脚本
+    # 排除 .git、所有打包产物 zip 和本脚本
     Get-ChildItem $root -Recurse -File |
         Where-Object {
             $_.FullName -notmatch '\\\.git($|\\)' -and
-            $_.Name -ne (Split-Path $zipPath -Leaf) -and
+            $_.Name -notlike 'grpc-T-v*.zip' -and
             $_.Name -ne 'pack.ps1'
         } |
         ForEach-Object {
