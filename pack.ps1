@@ -43,7 +43,8 @@ try {
             $_.FullName -notmatch '\\\.git($|\\)' -and
             $_.Name -notlike 'grpc-T-v*.zip' -and
             $_.Name -ne 'pack.ps1' -and
-            $_.Name -ne 'pack.cmd'
+            $_.Name -ne 'pack.cmd' -and
+            $_.Name -ne 'panel-test.html'
         } |
         ForEach-Object {
             $rel = $_.FullName.Substring($root.Length + 1).Replace('\', '/')
